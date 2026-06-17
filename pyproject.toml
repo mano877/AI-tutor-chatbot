@@ -1,0 +1,16 @@
+[project]
+name = "tutor-chatbot"
+version = "0.1.0"
+description = "AI Tutor Chatbot - A friendly AI tutor that explains concepts using analogies"
+readme = "README.md"
+requires-python = ">=3.14"
+dependencies = [
+    "fastapi[standard]>=0.137.1",
+    "langchain>=1.3.9",
+    "langchain-community>=0.4.2",
+    "langchain-ollama>=1.1.0",
+    "psycopg2-binary>=2.9.10",
+]
+
+[project.scripts]
+tutor-chatbot = "main:app"
