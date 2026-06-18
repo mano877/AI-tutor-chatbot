@@ -54,10 +54,10 @@ uv sync
 | Variable | Default | Description |
 |---|---|---|
 | `DB_HOST` | `localhost` | PostgreSQL host |
-| `DB_PORT` | `5432` | PostgreSQL port |
+| `DB_PORT` | `portnumber` | PostgreSQL port |
 | `DB_NAME` | `tutor_chatbot` | Database name |
-| `DB_USER` | `postgres` | Database user |
-| `DB_PASSWORD` | `postgres123` | Database password |
+| `DB_USER` | `username` | Database user |
+| `DB_PASSWORD` | `yourpassword` | Database password |
 | `DB_MIN_CONN` | `2` | Min pool connections |
 | `DB_MAX_CONN` | `10` | Max pool connections |
 
