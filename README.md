@@ -382,6 +382,4 @@ Contributions are welcome! Feel free to open issues or submit pull requests.
 
 <div align="center">
 
-Made with ❤️ for lifelong learners everywhere
-
 </div>
