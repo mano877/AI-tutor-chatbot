@@ -80,7 +80,7 @@ ollama serve
 ollama pull llama3.1:latest
 ```
 
-The API connects to Ollama at the URL configured in `chat.py` (default: `http://154.57.212.236:11434`).
+The API connects to Ollama at the URL configured in `chat.py`.
 
 ### 5️⃣ Start the API
 
@@ -360,7 +360,7 @@ Key settings in `chat.py`:
 
 | Setting | Value |
 |---|---|
-| Ollama Base URL | `http://154.57.212.236:11434` |
+| Ollama Base URL | `paste URL here` |
 | Model | `llama3.1:latest` |
 | Temperature | `0.7` |
 | Top-P | `0.9` |
