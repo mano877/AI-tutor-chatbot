@@ -1,11 +1,4 @@
-"""LangChain-based tutor chat logic with Ollama integration.
-
-The tutor acts as a friendly teacher who:
-- Explains concepts using simple, relatable analogies
-- Asks a follow-up question after each explanation to check understanding
-- Maintains a patient and encouraging tone
-- Adapts explanations based on the student's level
-"""
+"""LangChain-based tutor chat logic with Ollama integration."""
 
 import json
 import re
@@ -15,12 +8,16 @@ from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
 from langchain_ollama import ChatOllama
 
 # ── Configuration ──────────────────────────────────────────────────────────
+import os
+from dotenv import load_dotenv
 
-OLLAMA_BASE_URL = "http://154.57.212.236:11434"
-OLLAMA_MODEL = "llama3.1:latest"
+load_dotenv()
+
+OLLAMA_BASE_URL    = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
+OLLAMA_MODEL       = os.getenv("OLLAMA_MODEL", "llama3.1:latest")
 OLLAMA_TEMPERATURE = 0.7
-OLLAMA_TOP_P = 0.9
-OLLAMA_MAX_TOKENS = 1024
+OLLAMA_TOP_P       = 0.9
+OLLAMA_MAX_TOKENS  = 1024
 
 # ── System Prompt ─────────────────────────────────────────────────────────
 
@@ -35,74 +32,9 @@ TUTOR_SYSTEM_PROMPT = """You are TutorAI, a warm, friendly, and highly effective
 5. **Be Patient**: If a student seems confused, re-explain using a different analogy. Never make the student feel bad for not understanding.
 6. **Be Concise**: Keep explanations focused. Aim for 3-5 paragraphs max per turn.
 
-## Conversation Format
-
-- The conversation history is provided below.
-- Respond as the tutor in a natural, conversational tone.
-- After your explanation, always ask ONE specific follow-up question.
-- Never answer for the student or assume they understood — ask!
-
 Remember: You are a friendly teacher, not a text book. Make learning fun and engaging!"""
 
-
-# ── Helper: build LangChain messages from DB history ──────────────────────
-
-
-def build_messages_from_history(
-    history: list[dict[str, Any]],
-    current_message: str,
-) -> list:
-    """Convert database chat history + current message into LangChain message objects."""
-    messages: list = [SystemMessage(content=TUTOR_SYSTEM_PROMPT)]
-
-    for msg in history:
-        if msg["role"] == "user":
-            messages.append(HumanMessage(content=msg["content"]))
-        elif msg["role"] == "assistant":
-            messages.append(AIMessage(content=msg["content"]))
-
-    messages.append(HumanMessage(content=current_message))
-    return messages
-
-
-# ── Get LLM instance ──────────────────────────────────────────────────────
-
-
-def get_llm() -> ChatOllama:
-    """Get a configured ChatOllama instance."""
-    return ChatOllama(
-        model=OLLAMA_MODEL,
-        base_url=OLLAMA_BASE_URL,
-        temperature=OLLAMA_TEMPERATURE,
-        top_p=OLLAMA_TOP_P,
-        num_predict=OLLAMA_MAX_TOKENS,
-    )
-
-
-# ── Generate tutor response ────────────────────────────────────────────────
-
-
-def generate_tutor_response(
-    history: list[dict[str, Any]],
-    current_message: str,
-) -> str:
-    """Generate a tutor response using LangChain + Ollama.
-
-    Args:
-        history: List of message dicts with 'role' and 'content' keys.
-        current_message: The student's latest message.
-
-    Returns:
-        The tutor's response text.
-    """
-    llm = get_llm()
-    messages = build_messages_from_history(history, current_message)
-    response = llm.invoke(messages)
-    return response.content
-
-
-# ── Smart Endpoint Helpers (LLM-based analysis) ──────────────────────────
-
+# ── Prompts ────────────────────────────────────────────────────────────────
 
 TOPIC_EXTRACTION_PROMPT = """You are an AI teaching assistant analyzing a student's tutoring conversation history.
 
@@ -123,11 +55,6 @@ Return ONLY valid JSON, no other text."""
 WEAK_AREAS_PROMPT = """You are an AI teaching assistant analyzing a student's tutoring conversation history.
 
 Based on the following conversation history, identify topics the student seems to be STRUGGLING with or confused about.
-Look for signs like:
-- The student asked for re-explanation
-- The student gave incorrect answers to follow-up questions
-- The student expressed confusion
-- The tutor had to explain the same concept multiple times
 
 For each weak area, provide:
 1. The topic name
@@ -152,8 +79,8 @@ The student's conversation history:
 Create a {days}-day study plan with approximately {hours_per_day} hours of study per day.
 For each day, specify:
 1. Which topic to study
-2. How many minutes to spend (based on {hours_per_day} hours/day)
-3. Specific activities (e.g., "Review the concept of X", "Practice problem Y", "Watch a video on Z")
+2. How many minutes to spend
+3. Specific activities
 4. Any resources or practice suggestions
 
 Return your answer as a JSON object with key "plan", which is a list of objects with keys:
@@ -162,29 +89,66 @@ Return your answer as a JSON object with key "plan", which is a list of objects 
 Return ONLY valid JSON, no other text."""
 
 
+# ── LLM ───────────────────────────────────────────────────────────────────
+
+def get_llm() -> ChatOllama:
+    """Get a configured ChatOllama instance."""
+    return ChatOllama(
+        model=OLLAMA_MODEL,
+        base_url=OLLAMA_BASE_URL,
+        temperature=OLLAMA_TEMPERATURE,
+        top_p=OLLAMA_TOP_P,
+        num_predict=OLLAMA_MAX_TOKENS,
+    )
+
+
+# ── Core Functions ─────────────────────────────────────────────────────────
+
+def build_messages_from_history(history: list[dict[str, Any]], current_message: str) -> list:
+    """Convert DB history + current message into LangChain message objects."""
+    messages: list = [SystemMessage(content=TUTOR_SYSTEM_PROMPT)]
+    for msg in history:
+        if msg["role"] == "user":
+            messages.append(HumanMessage(content=msg["content"]))
+        elif msg["role"] == "assistant":
+            messages.append(AIMessage(content=msg["content"]))
+    messages.append(HumanMessage(content=current_message))
+    return messages
+
+
+def generate_tutor_response(history: list[dict[str, Any]], current_message: str) -> str:
+    """Generate a tutor response using LangChain + Ollama."""
+    llm = get_llm()
+    messages = build_messages_from_history(history, current_message)
+    response = llm.invoke(messages)
+    return response.content
+
+
 def extract_topics(history: list[dict[str, Any]]) -> list[dict[str, str]]:
-    """Extract topics the student has studied from chat history using LLM."""
+    """Extract topics the student has studied from chat history."""
     if not history:
         return []
-
     history_text = _format_history_for_prompt(history)
     llm = get_llm()
     prompt = TOPIC_EXTRACTION_PROMPT.format(history=history_text)
-    response = llm.invoke([SystemMessage(content="You are a helpful teaching assistant."), HumanMessage(content=prompt)])
+    response = llm.invoke([
+        SystemMessage(content="You are a helpful teaching assistant."),
+        HumanMessage(content=prompt)
+    ])
     return _parse_json_response(response.content)
 
 
 def extract_weak_areas(history: list[dict[str, Any]]) -> list[dict[str, str]]:
-    """Detect topics the student is struggling with using LLM."""
+    """Detect topics the student is struggling with."""
     if not history:
         return []
-
     history_text = _format_history_for_prompt(history)
-
-    # Build a more targeted prompt: focus on struggles
     llm = get_llm()
     prompt = WEAK_AREAS_PROMPT.format(history=history_text)
-    response = llm.invoke([SystemMessage(content="You are a helpful teaching assistant."), HumanMessage(content=prompt)])
+    response = llm.invoke([
+        SystemMessage(content="You are a helpful teaching assistant."),
+        HumanMessage(content=prompt)
+    ])
     return _parse_json_response(response.content)
 
 
@@ -197,10 +161,8 @@ def generate_study_plan(
     """Generate a personalized study plan based on weak areas."""
     if not weak_areas:
         return []
-
     history_text = _format_history_for_prompt(history)
     weak_areas_text = json.dumps([w["topic"] for w in weak_areas], indent=2)
-
     llm = get_llm()
     prompt = STUDY_PLAN_PROMPT.format(
         weak_areas=weak_areas_text,
@@ -208,8 +170,10 @@ def generate_study_plan(
         days=days,
         hours_per_day=hours_per_day,
     )
-    response = llm.invoke([SystemMessage(content="You are a helpful teaching assistant."), HumanMessage(content=prompt)])
-
+    response = llm.invoke([
+        SystemMessage(content="You are a helpful teaching assistant."),
+        HumanMessage(content=prompt)
+    ])
     parsed = _parse_json_response(response.content)
     if isinstance(parsed, dict) and "plan" in parsed:
         return parsed["plan"]
@@ -218,9 +182,8 @@ def generate_study_plan(
 
 # ── Helpers ────────────────────────────────────────────────────────────────
 
-
 def _format_history_for_prompt(history: list[dict[str, Any]]) -> str:
-    """Format chat history into a readable text for LLM prompts."""
+    """Format chat history into readable text for LLM prompts."""
     lines = []
     for msg in history:
         role_label = "Student" if msg["role"] == "user" else "Tutor"
@@ -229,17 +192,13 @@ def _format_history_for_prompt(history: list[dict[str, Any]]) -> str:
 
 
 def _parse_json_response(text: str) -> Any:
-    """Try to parse JSON from LLM response, handling markdown code fences."""
-    # Try to extract JSON from markdown code blocks
+    """Parse JSON from LLM response, handling markdown code fences."""
     match = re.search(r"```(?:json)?\s*\n?(.*?)\n?```", text, re.DOTALL)
     if match:
         text = match.group(1).strip()
-
-    # Try direct JSON parse
     try:
         return json.loads(text)
     except json.JSONDecodeError:
-        # Try to find JSON array or object in the text
         array_match = re.search(r"\[.*\]", text, re.DOTALL)
         if array_match:
             try:
