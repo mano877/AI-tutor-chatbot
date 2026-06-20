@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException
 
-from app.database import get_chat_history, get_student
-from app.models import (
+from app.database.database import get_chat_history, get_student
+from app.database.models import (
     ErrorResponse,
     StudyDay,
     StudyPlanRequest,
@@ -11,11 +11,7 @@ from app.models import (
     WeakAreaResponse,
     WeakAreasResponse,
 )
-from app.services.ai_service import (
-    extract_topics,
-    extract_weak_areas,
-    generate_study_plan,
-)
+from app.services.ai_service import extract_topics, extract_weak_areas, generate_study_plan
 
 router = APIRouter(prefix="/students", tags=["Smart Analysis"])
 

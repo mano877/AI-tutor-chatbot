@@ -1,12 +1,7 @@
 from fastapi import APIRouter, HTTPException
 
-from app.database import (
-    add_chat_message,
-    clear_chat_history,
-    get_chat_history,
-    get_student,
-)
-from app.models import (
+from app.database.database import add_chat_message, clear_chat_history, get_chat_history, get_student
+from app.database.models import (
     ChatHistoryResponse,
     ChatMessageResponse,
     ChatRequest,

@@ -1,18 +1,17 @@
 """LangChain-based tutor chat logic with Ollama integration."""
 
 import json
+import os
 import re
 from typing import Any
 
-from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
-from langchain_ollama import ChatOllama
-
-# ── Configuration ──────────────────────────────────────────────────────────
-import os
 from dotenv import load_dotenv
+from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
+from langchain_ollama import ChatOllama
 
 load_dotenv()
 
+# ── Configuration ──────────────────────────────────────────────────────────
 OLLAMA_BASE_URL    = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
 OLLAMA_MODEL       = os.getenv("OLLAMA_MODEL", "llama3.1:latest")
 OLLAMA_TEMPERATURE = 0.7
@@ -20,7 +19,6 @@ OLLAMA_TOP_P       = 0.9
 OLLAMA_MAX_TOKENS  = 1024
 
 # ── System Prompt ─────────────────────────────────────────────────────────
-
 TUTOR_SYSTEM_PROMPT = """You are TutorAI, a warm, friendly, and highly effective tutor. Your purpose is to help students learn any topic they ask about.
 
 ## Your Teaching Style
@@ -35,7 +33,6 @@ TUTOR_SYSTEM_PROMPT = """You are TutorAI, a warm, friendly, and highly effective
 Remember: You are a friendly teacher, not a text book. Make learning fun and engaging!"""
 
 # ── Prompts ────────────────────────────────────────────────────────────────
-
 TOPIC_EXTRACTION_PROMPT = """You are an AI teaching assistant analyzing a student's tutoring conversation history.
 
 Based on the following conversation history, identify ALL academic topics the student has studied or asked about.
@@ -90,9 +87,7 @@ Return ONLY valid JSON, no other text."""
 
 
 # ── LLM ───────────────────────────────────────────────────────────────────
-
 def get_llm() -> ChatOllama:
-    """Get a configured ChatOllama instance."""
     return ChatOllama(
         model=OLLAMA_MODEL,
         base_url=OLLAMA_BASE_URL,
@@ -103,9 +98,7 @@ def get_llm() -> ChatOllama:
 
 
 # ── Core Functions ─────────────────────────────────────────────────────────
-
 def build_messages_from_history(history: list[dict[str, Any]], current_message: str) -> list:
-    """Convert DB history + current message into LangChain message objects."""
     messages: list = [SystemMessage(content=TUTOR_SYSTEM_PROMPT)]
     for msg in history:
         if msg["role"] == "user":
@@ -117,7 +110,6 @@ def build_messages_from_history(history: list[dict[str, Any]], current_message: 
 
 
 def generate_tutor_response(history: list[dict[str, Any]], current_message: str) -> str:
-    """Generate a tutor response using LangChain + Ollama."""
     llm = get_llm()
     messages = build_messages_from_history(history, current_message)
     response = llm.invoke(messages)
@@ -125,7 +117,6 @@ def generate_tutor_response(history: list[dict[str, Any]], current_message: str)
 
 
 def extract_topics(history: list[dict[str, Any]]) -> list[dict[str, str]]:
-    """Extract topics the student has studied from chat history."""
     if not history:
         return []
     history_text = _format_history_for_prompt(history)
@@ -139,7 +130,6 @@ def extract_topics(history: list[dict[str, Any]]) -> list[dict[str, str]]:
 
 
 def extract_weak_areas(history: list[dict[str, Any]]) -> list[dict[str, str]]:
-    """Detect topics the student is struggling with."""
     if not history:
         return []
     history_text = _format_history_for_prompt(history)
@@ -158,7 +148,6 @@ def generate_study_plan(
     days: int = 7,
     hours_per_day: float = 1.0,
 ) -> list[dict[str, Any]]:
-    """Generate a personalized study plan based on weak areas."""
     if not weak_areas:
         return []
     history_text = _format_history_for_prompt(history)
@@ -181,9 +170,7 @@ def generate_study_plan(
 
 
 # ── Helpers ────────────────────────────────────────────────────────────────
-
 def _format_history_for_prompt(history: list[dict[str, Any]]) -> str:
-    """Format chat history into readable text for LLM prompts."""
     lines = []
     for msg in history:
         role_label = "Student" if msg["role"] == "user" else "Tutor"
@@ -192,7 +179,6 @@ def _format_history_for_prompt(history: list[dict[str, Any]]) -> str:
 
 
 def _parse_json_response(text: str) -> Any:
-    """Parse JSON from LLM response, handling markdown code fences."""
     match = re.search(r"```(?:json)?\s*\n?(.*?)\n?```", text, re.DOTALL)
     if match:
         text = match.group(1).strip()

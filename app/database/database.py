@@ -8,11 +8,11 @@ import psycopg2
 import psycopg2.extras
 from psycopg2.pool import ThreadedConnectionPool
 
-# Database configuration from environment variables with defaults
-DB_HOST = os.getenv("DB_HOST", "localhost")
-DB_PORT = int(os.getenv("DB_PORT", "5432"))
-DB_NAME = os.getenv("DB_NAME", "tutor_chatbot")
-DB_USER = os.getenv("DB_USER", "postgres")
+# Database configuration from environment variables
+DB_HOST     = os.getenv("DB_HOST", "localhost")
+DB_PORT     = int(os.getenv("DB_PORT", "5432"))
+DB_NAME     = os.getenv("DB_NAME", "tutor_chatbot")
+DB_USER     = os.getenv("DB_USER", "postgres")
 DB_PASSWORD = os.getenv("DB_PASSWORD", "postgres123")
 DB_MIN_CONN = int(os.getenv("DB_MIN_CONN", "2"))
 DB_MAX_CONN = int(os.getenv("DB_MAX_CONN", "10"))
@@ -92,7 +92,6 @@ def close_pool() -> None:
 
 # ── Student CRUD ──────────────────────────────────────────────────────────
 
-
 def create_student(name: str, email: str) -> dict:
     """Insert a new student and return their record."""
     with get_db() as conn:
@@ -101,8 +100,7 @@ def create_student(name: str, email: str) -> dict:
                 "INSERT INTO students (name, email) VALUES (%s, %s) RETURNING id, name, email, created_at;",
                 (name, email),
             )
-            row = cur.fetchone()
-            return dict(row)  # type: ignore[arg-type]
+            return dict(cur.fetchone())
 
 
 def list_students() -> list[dict]:
@@ -128,7 +126,7 @@ def get_student(student_id: int) -> dict | None:
 
 
 def delete_student(student_id: int) -> bool:
-    """Delete a student and all their chat messages (CASCADE). Returns True if deleted."""
+    """Delete a student and all their chat messages. Returns True if deleted."""
     with get_db() as conn:
         with conn.cursor() as cur:
             cur.execute(
@@ -140,7 +138,6 @@ def delete_student(student_id: int) -> bool:
 
 # ── Chat Message CRUD ──────────────────────────────────────────────────────
 
-
 def add_chat_message(student_id: int, role: str, content: str) -> dict:
     """Insert a chat message and return it."""
     with get_db() as conn:
@@ -149,7 +146,7 @@ def add_chat_message(student_id: int, role: str, content: str) -> dict:
                 "INSERT INTO chat_messages (student_id, role, content) VALUES (%s, %s, %s) RETURNING id, student_id, role, content, timestamp;",
                 (student_id, role, content),
             )
-            return dict(cur.fetchone())  # type: ignore[arg-type]
+            return dict(cur.fetchone())
 
 
 def get_chat_history(student_id: int) -> list[dict]:
@@ -164,7 +161,7 @@ def get_chat_history(student_id: int) -> list[dict]:
 
 
 def clear_chat_history(student_id: int) -> bool:
-    """Delete all messages for a student. Returns True if any were deleted."""
+    """Delete all messages for a student."""
     with get_db() as conn:
         with conn.cursor() as cur:
             cur.execute(

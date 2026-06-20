@@ -4,12 +4,11 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.database import init_db, close_pool
+from app.database.database import init_db, close_pool
 from app.routers import students, chat, smart
 
 
 # ── Lifespan ───────────────────────────────────────────────────────────────
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Startup: initialize DB. Shutdown: close connections."""
@@ -19,7 +18,6 @@ async def lifespan(app: FastAPI):
 
 
 # ── App ────────────────────────────────────────────────────────────────────
-
 app = FastAPI(
     title="📚 AI Tutor Chatbot",
     description=(
@@ -40,14 +38,12 @@ app.add_middleware(
 
 
 # ── Routers ────────────────────────────────────────────────────────────────
-
 app.include_router(students.router)
 app.include_router(chat.router)
 app.include_router(smart.router)
 
 
 # ── Root ───────────────────────────────────────────────────────────────────
-
 @app.get("/", tags=["Root"])
 def root():
     return {
@@ -59,5 +55,4 @@ def root():
 
 @app.get("/health", tags=["Health"], summary="Health check endpoint")
 def health_check():
-    """Check if the API is running."""
     return {"status": "healthy", "service": "AI Tutor Chatbot"}

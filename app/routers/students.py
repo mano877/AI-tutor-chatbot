@@ -1,18 +1,8 @@
 from fastapi import APIRouter, HTTPException
 from psycopg2.errors import UniqueViolation
 
-from app.database import (
-    create_student,
-    delete_student,
-    get_student,
-    list_students,
-)
-from app.models import (
-    ErrorResponse,
-    StudentCreate,
-    StudentListResponse,
-    StudentResponse,
-)
+from app.database.database import create_student, delete_student, get_student, list_students
+from app.database.models import ErrorResponse, StudentCreate, StudentListResponse, StudentResponse
 
 router = APIRouter(prefix="/students", tags=["Students"])
 
@@ -35,11 +25,7 @@ def register_student(body: StudentCreate):
     return student
 
 
-@router.get(
-    "",
-    response_model=StudentListResponse,
-    summary="List all registered students",
-)
+@router.get("", response_model=StudentListResponse, summary="List all registered students")
 def list_all_students():
     """Get a list of all registered students."""
     students = list_students()
